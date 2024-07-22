@@ -5,8 +5,8 @@
  *      Author: 杨璐
  */
 
-#ifndef INC_NB_IOT_TEST_H_
-#define INC_NB_IOT_TEST_H_
+#ifndef INC_AT_BC28_H_
+#define INC_AT_BC28_H_
 
 enum
 {
@@ -32,4 +32,4 @@ extern int NB_RSET_OK();
 extern int NB_HDW_OK();
 extern int NB_CONF_OK();
 
-#endif /* INC_NB_IOT_TEST_H_ */
+#endif /* INC_AT_BC28_H_ */

@@ -31,6 +31,9 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "stream_buffer.h"
 
 /* USER CODE END Includes */
 
@@ -39,25 +42,32 @@ extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */
 
+#ifdef CONFIG_OS_LINUX
+typedef int						UART_Handle_t
+typedef pthread_mutex_lock		lock_t
+#else
+typedef UART_HandleTypeDef *	UART_Handle_t;
+#endif
+
+#define NBIOT_UART		&huart3
+
 typedef struct comport_s
 {
-	UART_HandleTypeDef *huart;
-	uint8_t				s_uart_rxch;
+	UART_Handle_t 		dev;
 }comport_t;
 
-typedef struct comport_plat_s
-{
-	comport_t	comport;
-	int					(*uart_send)(char *data,comport_t *comport);
-	void				(*uart_receive)(comport_t *comport);
-}comport_plat_t;
+extern comport_t comport;
 
-extern comport_t	comport;
-extern comport_plat_t comport_platform;
+int comport_open(comport_t *comport, void *devname, long baudrate, char *settings);
 
-extern char 		g_uart3_rxbuf[256];
-extern uint8_t		g_uart3_bytes;
-extern uint8_t		s_uart3_rxch;
+int comport_send(comport_t *comport, char *data, int bytes);
+
+int comport_recv(comport_t *comport, char *buf, int bytes, unsigned long timeout);
+
+void comport_close(comport_t *comport);
+
+extern StreamBufferHandle_t	xStreamBuffer;
+extern uint8_t				data;
 
 /* USER CODE END Private defines */
 
@@ -65,9 +75,7 @@ void MX_USART1_UART_Init(void);
 void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-extern int uart_send(char *data,comport_t *comport);
-extern void uart_receive(comport_t *comport);
-extern void uart_init(comport_t *comport,comport_plat_t *comport_platform,UART_HandleTypeDef *huart,uint8_t s_uart_rxch);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

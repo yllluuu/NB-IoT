@@ -9,7 +9,6 @@
 #include <string.h>
 
 EventGroupHandle_t	Event_Handle;
-StreamBufferHandle_t	xStreamBuffer;
 StreamBufferHandle_t	xAsynStreamBuffer;
 SemaphoreHandle_t	xSemaphore;
 
@@ -21,10 +20,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == USART3)
     {
-    	uart_receive(&comport);
+    	HAL_UART_Receive_IT(g_atcmd.comport->dev, &data, 1);
         if(xStreamBufferSpacesAvailable(xStreamBuffer)>0)
-        	xStreamBufferSendFromISR(xStreamBuffer, &comport.s_uart_rxch, 1, &xHigherPriorityTaskWoken);
-        if('\n' == comport.s_uart_rxch)
+        {
+        	xStreamBufferSendFromISR(xStreamBuffer, &data, 1, &xHigherPriorityTaskWoken);
+        }
+        if('\n' == data)
         {
         	xSemaphoreGiveFromISR(xSemaphore,&xHigherPriorityTaskWoken);
         }
@@ -95,7 +96,7 @@ int atcmd_send(char *at, uint32_t timeout,char *reply,size_t size)
 	snprintf(g_atcmd.xAtCmd,ATCMD_SIZE,"%s%s",at,AT_SUFFIX);
 	memset(g_atcmd.xAtCmdReply,0,ATCMD_SIZE);
 
-	if(uart_send(g_atcmd.xAtCmd,&comport) != HAL_OK)
+	if(comport_send(g_atcmd.comport, g_atcmd.xAtCmd, strlen(g_atcmd.xAtCmd)) != HAL_OK)
 	{
 		printf("Send AT command failed\r\n");
 		rv = -2;
@@ -103,7 +104,6 @@ int atcmd_send(char *at, uint32_t timeout,char *reply,size_t size)
 	}
 	printf("Send AT command OK\r\n");
 
-	//vTaskDelay(pdMS_TO_TICKS(timeout));/*Waiting for data to be sent out*/
 	r_event = xEventGroupWaitBits(Event_Handle,Receive_EVENT,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
 	if(!(r_event&Receive_EVENT))
 	{
@@ -148,6 +148,18 @@ out:
 		return 0;
 }
 
+int atcmd_check_OK(char *at,uint32_t timeout)
+{
+	int		rv = 0;
+
+	rv = atcmd_send(at, timeout, NULL, 0);
+	if(rv<0)
+	{
+		return -1;
+	}
+
+	return 0;
+}
 int atcmd_check_value(char *at, uint32_t timeout,char *reply,size_t size)
 {
 	int			rv = 0,i=0;

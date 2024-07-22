@@ -12,9 +12,11 @@
 #include "event_groups.h"
 #include "stream_buffer.h"
 #include "semphr.h"
+#include "usart.h"
 
 typedef struct atcmd_s
 {
+	comport_t    *comport;
 	char		xAtCmd[256];
 	char		xAtCmdReply[256];
 }atcmd_t;
@@ -38,12 +40,11 @@ extern atcmd_t	g_atcmd;
 
 extern EventGroupHandle_t	Event_Handle;
 
-extern StreamBufferHandle_t	xStreamBuffer;
-
 extern SemaphoreHandle_t	xSemaphore;
 
 extern int atcmd_pars(char *buf);
 extern int atcmd_send(char *at, uint32_t timeout,char *reply,size_t size);
+extern int atcmd_check_OK(char *at,uint32_t timeout);
 extern int atcmd_check_value(char *at, uint32_t timeout,char *reply,size_t size);
 extern int parser_async_message(char *buf,char *keystr);
 

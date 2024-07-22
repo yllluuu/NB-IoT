@@ -20,14 +20,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
+
 /* USER CODE BEGIN 0 */
-uint8_t				s_uart3_rxch;
-char				g_uart3_rxbuf[256];
-uint8_t				g_uart3_bytes;
-
-comport_t	comport;
-comport_plat_t  comport_platform;
-
+uint8_t				data;
+StreamBufferHandle_t	xStreamBuffer;
+comport_t			comport;
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -91,7 +88,7 @@ void MX_USART3_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART3_Init 2 */
-  HAL_UART_Receive_IT(&huart3, &s_uart3_rxch, 1);
+  HAL_UART_Receive_IT(&huart3, &data, 1);
   /* USER CODE END USART3_Init 2 */
 
 }
@@ -230,27 +227,38 @@ PUTCHAR_PROTOTYPE
 	return ch;
 }
 
-#define STM32_platform
-#ifdef STM32_platform
-int uart_send(char *data,comport_t *comport)
+int comport_open(comport_t *comport, void *devname, long baudrate, char *settings)
 {
-	return HAL_UART_Transmit(comport->huart, (uint8_t *)data, strlen(data),0xFFFF);
+   comport->dev = devname;
+   printf("Open uart ok\r\n");
+   return 0;
 }
 
-void uart_receive(comport_t *comport)
+void comport_close(comport_t *comport)
 {
-	HAL_UART_Receive_IT(comport->huart,&comport->s_uart_rxch,1);
+	return ;
 }
-#endif
 
-void uart_init(comport_t *comport,comport_plat_t *comport_platform,UART_HandleTypeDef *huart,uint8_t s_uart_rxch)
+int comport_send(comport_t *comport, char *data, int bytes)
 {
-	comport->huart = huart;
-	comport->s_uart_rxch = s_uart_rxch;
-#ifdef STM32_platform
-	comport_platform->uart_send = uart_send;
-	comport_platform->uart_receive = uart_receive;
-#endif
+	if(!comport || !data || bytes<=0)
+	{
+		printf("Invalid input arguments\n");
+		return -1;
+	}
+	return HAL_UART_Transmit(comport->dev, (uint8_t *)data, bytes,0xFFFF);//bytes=strlen(data)
+}
+
+int comport_recv(comport_t *comport, char *buf, int bytes, unsigned long timeout)
+{
+	if(!comport || !buf || bytes<=0)
+	{
+		printf("Invalid input argument\n");
+		return -1;
+	}
+	xStreamBufferReceive(xStreamBuffer,buf,bytes,pdMS_TO_TICKS(timeout));
+
+	return 0;
 }
 
 /* USER CODE END 1 */

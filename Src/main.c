@@ -17,6 +17,7 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <at-bc28.h>
 #include "main.h"
 #include "cmsis_os.h"
 #include "i2c.h"
@@ -31,7 +32,6 @@
 #include "task.h"
 #include "list.h"
 #include "timers.h"
-#include "NB-IoT_test.h"
 #include "sht30.h"
 /* USER CODE END Includes */
 
@@ -56,7 +56,6 @@ static void BSP_Init(void);
 static void NBIoT_MGR(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void Report_Task(void *parameter);
-static void Respond_Task(void *parameter);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -86,13 +85,15 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
 	BSP_Init();
 	BaseType_t xReturn = pdPASS;
 
-	uart_init(&comport,&comport_platform,&huart3,s_uart3_rxch);
+	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
+	g_atcmd.comport = &comport;
 
 	Event_Handle = xEventGroupCreate();
 	if(NULL != Event_Handle)
@@ -121,10 +122,6 @@ int main(void)
 	xReturn = xTaskCreate(atcmd_receive_task,"atcmd_receive_task",1024,NULL,3,&ReceiveTask_Handle);
 	if(xReturn == pdPASS)
 		printf("Receive_Task was created\r\n");
-
-	xReturn = xTaskCreate(Respond_Task,"Respond_Task",1024,NULL,4,&RespondTask_Handle);
-	if(xReturn == pdPASS)
-		printf("Respond_Task was created\r\n");
 
 	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
 
@@ -194,7 +191,6 @@ static void BSP_Init(void)
 
 static void NBIoT_MGR(void *parameter)
 {
-	//NBiot_conf_t *NBconf = (NBiot_conf_t *)parameter;
 	NBconf.status =STAT_INIT;
 
 	while(1)
@@ -245,6 +241,7 @@ void atcmd_receive_task(void *parameter)
 	uint32_t		bytes = 0;
 	uint32_t		last_bytes = 0;
 	char			buf[ATBUF_SIZE];
+	int				timeout = 50;
 
 	while(1)
 	{
@@ -269,11 +266,10 @@ WAIT_NEWDATA:
 
 		bytes = bytes>ATBUF_SIZE?ATBUF_SIZE:bytes;
 		memset(buf,0,sizeof(buf));
-		xStreamBufferReceive(xStreamBuffer,buf,bytes,pdMS_TO_TICKS(50));
-		//printf("#####Receive_buf:%s",buf);
+		comport_recv(&comport, buf, bytes, timeout);
 		printf("start to parser data\r\n");
 
-		parser_async_message(buf,"+NNMI:");
+		parser_async_message(buf, "+NNMI:");
 
 		atcmd_pars(buf);
 	}
@@ -288,7 +284,6 @@ void float_to_hex(float f, char hex[9])
 
 static void Report_Task(void *parameter)
 {
-	//NBiot_conf_t *NBconf = (NBiot_conf_t *)parameter;
 	char			atcmd[256];
 	float			temperature,humidity;
 	int 			timeout=500,rv=0;
@@ -327,24 +322,6 @@ static void Report_Task(void *parameter)
 			}
 		}
 		vTaskDelay(pdMS_TO_TICKS(3000));
-	}
-}
-
-static void Respond_Task(void *parameter)
-{
-	EventBits_t		r_event;
-
-	while(1)
-	{
-		r_event = xEventGroupWaitBits(Event_Handle,Aysn_EVENT,pdTRUE, pdFALSE, pdMS_TO_TICKS(10));
-		if(r_event&Aysn_EVENT)
-		{
-			if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
-			{
-				printf("start to response ACK\r\n");
-				xSemaphoreGive(xMutex);
-			}
-		}
 	}
 }
 
