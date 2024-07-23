@@ -56,6 +56,7 @@ static void BSP_Init(void);
 static void NBIoT_MGR(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void Report_Task(void *parameter);
+static int sht30_get_temp(char *buf,int size);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -282,13 +283,33 @@ void float_to_hex(float f, char hex[9])
 	snprintf(hex,9,"%02X%02X%02X%02X",byteptr[3],byteptr[2],byteptr[1],byteptr[0]);
 }
 
+int sht30_get_temp(char *buf,int size)
+{
+	float			temperature,humidity;
+	char			hex1[9],hex2[9];
+	int				rv;
+
+	memset(hex1,0,sizeof(hex1));
+	memset(hex2,0,sizeof(hex2));
+
+	rv=SHT30_SmapleData(&temperature, &humidity);
+	if(rv<0)
+	{
+		printf("error\r\n");
+		return -1;
+	}
+	float_to_hex(temperature, hex1);
+	float_to_hex(humidity, hex2);
+	snprintf(buf, size,"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",\
+													hex2,hex1);
+	return 0;
+}
+
 static void Report_Task(void *parameter)
 {
 	char			atcmd[256];
-	float			temperature,humidity;
-	int 			timeout=500,rv=0;
+	int 			timeout=500;
 	char			reply_buf[256];
-	char			hex1[9],hex2[9];
 
 	while(1)
 	{
@@ -296,16 +317,12 @@ static void Report_Task(void *parameter)
 		{
 			if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
 			{
-				rv=SHT30_SmapleData(&temperature, &humidity);
-				float_to_hex(temperature, hex1);
-				float_to_hex(humidity, hex2);
-
-				if(rv<0)
-					printf("error*****rv=%d\r\n",rv);
+				if(sht30_get_temp(atcmd,sizeof(atcmd))<0)
+				{
+					printf("get temperature and humidity error\r\n");
+				}
 				else
 				{
-					snprintf(atcmd, sizeof(atcmd),"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",\
-											hex2,hex1);
 					if(atcmd_send(atcmd, timeout,reply_buf,sizeof(reply_buf))<0)
 					{
 						printf("Send data to cloud failed\r\n");
