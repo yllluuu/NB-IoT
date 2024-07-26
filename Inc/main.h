@@ -22,13 +22,16 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
+#define CONFIG_OS_STM32
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
+#ifdef CONFIG_OS_STM32
 #include "stm32l4xx_hal.h"
-
+#endif
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -50,18 +53,22 @@ extern "C" {
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
+#ifdef CONFIG_OS_STM32
 void Error_Handler(void);
-
+#endif
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define green_led_Pin GPIO_PIN_7
-#define green_led_GPIO_Port GPIOB
+
 
 /* USER CODE BEGIN Private defines */
-
+#ifdef CONFIG_OS_STM32
+#define NBIOT_UART		&huart3
+#define green_led_Pin GPIO_PIN_7
+#define green_led_GPIO_Port GPIOB
+#endif
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

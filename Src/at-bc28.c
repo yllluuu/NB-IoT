@@ -5,15 +5,12 @@
  *      Author: 杨璐
  */
 #include "at-bc28.h"
-#include "usart.h"
-#include "string.h"
-#include "at_cmd.h"
 
 NBiot_conf_t		NBconf;
 
-int bc28_check_at()
+int BC28_Check_AT(comport_t *comport)
 {
-	if(atcmd_check_OK("AT", 200)<0)
+	if(atcmd_check_OK(comport, "AT", 500)<0)
 	{
 		printf("AT command test failed,try again...\r\n");
 		return -1;
@@ -23,9 +20,21 @@ int bc28_check_at()
 	return 0;
 }
 
-int bc28_get_mnf(char *reply_buf)
+int BC28_Reset(comport_t *comport)
 {
-	if(atcmd_send("AT+CGMI", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_send(comport, "AT+NRB", 5000, "OK", AT_ERRSTR, NULL, 0)<0)
+	{
+		printf("send AT command to reset NB-IoT failed\r\n");
+		return -1;
+	}
+	else
+		printf("BC28 module Reset OK\r\n");
+	return 0;
+}
+
+int BC28_Get_MANUF(comport_t *comport, char *reply_buf)
+{
+	if(atcmd_send(comport, "AT+CGMI", 500, AT_OKSTR, AT_ERRSTR, reply_buf, sizeof(reply_buf))<0)
 	{
 		printf("View module manufacturers failed,try again...\r\n");
 		return -1;
@@ -38,11 +47,11 @@ int bc28_get_mnf(char *reply_buf)
 	return 0;
 }
 
-int bc28_get_model(char *reply_buf)
+int BC28_Get_Module(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_send("AT+CGMM", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_send(comport, "AT+CGMM", 500, AT_OKSTR, AT_ERRSTR, reply_buf, sizeof(reply_buf))<0)
 	{
-		printf("View module model failed,try again...\r\n");
+		printf("View module module failed,try again...\r\n");
 		return -1;
 	}
 	else
@@ -53,9 +62,9 @@ int bc28_get_model(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_imei(char *reply_buf)
+int BC28_Check_IMEI(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CGSN=1",200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CGSN=1", 500, reply_buf, sizeof(reply_buf))<0)
 	{
 		printf("Check module IMEI number is not normal\r\n");
 		return -1;
@@ -66,22 +75,22 @@ int bc28_check_imei(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_simcd(char *reply_buf)
+int BC28_Check_SIMCD(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_send("AT+CIMI",200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_send(comport, "AT+CIMI", 500, AT_OKSTR, AT_ERRSTR, reply_buf, sizeof(reply_buf))<0)
 	{
 		printf("SIM card does not exist\r\n");
 		return -1;
 	}
-	strncpy(NBconf.SIM,reply_buf,strlen(reply_buf)-6);
+	strncpy(NBconf.SIM,reply_buf,strlen(reply_buf));
 	printf("SIM card exists\r\n");
 
 	return 0;
 }
 
-int bc28_set_autocnt()
+int BC28_Set_AUTOCNT(comport_t *comport)
 {
-	if(atcmd_check_OK("AT+NCONFIG=AUTOCONNECT,TRUE",200)<0)
+	if(atcmd_check_OK(comport, "AT+NCONFIG=AUTOCONNECT,TRUE",500)<0)
 	{
 		printf("Auto connect failed\r\n");
 		return -1;
@@ -91,9 +100,9 @@ int bc28_set_autocnt()
 	return 0;
 }
 
-int bc28_check_CFUN(char *reply_buf)
+int BC28_Check_CFUN(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CFUN?", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CFUN?", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The radio is not turn on\r\n");
 		return -1;
@@ -103,9 +112,9 @@ int bc28_check_CFUN(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_CSQ(char *reply_buf)
+int BC28_Check_CSQ(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CSQ", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CSQ", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The module signal test failed,try again...\r\n");
 		return -1;
@@ -116,9 +125,9 @@ int bc28_check_CSQ(char *reply_buf)
 	return 0;
 }
 
-int bc28_set_attach_net()
+int BC28_Set_Attach_Net(comport_t *comport)
 {
-	if(atcmd_check_OK("AT+CGATT=1", 200)<0)
+	if(atcmd_check_OK(comport, "AT+CGATT=1", 500)<0)
 	{
 		printf("The module attachment network test failed,try again...\r\n");
 		return -1;
@@ -128,9 +137,9 @@ int bc28_set_attach_net()
 	return 0;
 }
 
-int bc28_check_attach_net(char *reply_buf)
+int BC28_Check_Attach_Net(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CGATT?", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CGATT?", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The module attachment network test failed,try again...\r\n");
 		return -1;
@@ -140,9 +149,9 @@ int bc28_check_attach_net(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_reg_status(char *reply_buf)
+int BC28_Check_Reg_Status(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CEREG?", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CEREG?", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The network registration status is abnormal,try again...\r\n");
 		return -1;
@@ -152,9 +161,9 @@ int bc28_check_reg_status(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_ip(char *reply_buf)
+int BC28_Check_IP(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+CGPADDR", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+CGPADDR", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("Obtaining an IP address is abnormal,try again...\r\n");
 		return -1;
@@ -164,9 +173,9 @@ int bc28_check_ip(char *reply_buf)
 	return 0;
 }
 
-int bc28_set_ip_port(char *reply_buf)
+int BC28_Set_IP_PORT(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_send("AT+NCDP=221.229.214.202,5683\r\n",200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_send(comport, "AT+NCDP=221.229.214.202,5683\r\n",500,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The module fails to connect to the cloud platform failed, try again...\r\n");
 		return -1;
@@ -176,9 +185,9 @@ int bc28_set_ip_port(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_ip_port(char *reply_buf)
+int BC28_Check_IP_PORT(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+NCDP?", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+NCDP?", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("The cloud platform is incorrectly configured, try again...\r\n");
 		return -1;
@@ -188,9 +197,9 @@ int bc28_check_ip_port(char *reply_buf)
 	return 0;
 }
 
-int bc28_check_iot(char *reply_buf)
+int BC28_Check_IOT(comport_t *comport, char *reply_buf)
 {
-	if(atcmd_check_value("AT+NMSTATUS?", 200,reply_buf,sizeof(reply_buf))<0)
+	if(atcmd_check_value(comport, "AT+NMSTATUS?", 500,reply_buf,sizeof(reply_buf))<0)
 	{
 		printf("Failed to register the telecom cloud platform,try again...\r\n");
 		return -1;
@@ -200,65 +209,65 @@ int bc28_check_iot(char *reply_buf)
 	return 0;
 }
 
-int NB_RSET_OK()
+int NB_RSET_OK(comport_t *comport)
 {
-	if(bc28_check_at()<0)
+	if(BC28_Check_AT(comport)<0)
 		return -1;
 
 	return 0;
 }
 
-int NB_HDW_OK()
+int NB_HDW_OK(comport_t *comport)
 {
 	char 		reply_buf[256];
 
-	if(bc28_get_mnf(reply_buf)<0)
+	if(BC28_Get_MANUF(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_get_model(reply_buf)<0)
+	if(BC28_Get_Module(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_imei(reply_buf)<0)
+	if(BC28_Check_IMEI(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_simcd(reply_buf))
+	if(BC28_Check_SIMCD(comport, reply_buf))
 		return -1;
 
 	return 0;
 }
 
-int NB_CONF_OK()
+int NB_CONF_OK(comport_t *comport)
 {
 	char 		reply_buf[256];
 
-	if(bc28_set_autocnt()<0)
+	if(BC28_Set_AUTOCNT(comport)<0)
 		return -1;
 
-	if(bc28_check_CFUN(reply_buf)<0)
+	if(BC28_Check_CFUN(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_CSQ(reply_buf)<0)
+	if(BC28_Check_CSQ(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_set_attach_net()<0)
+	if(BC28_Set_Attach_Net(comport)<0)
 		return -1;
 
-	if(bc28_check_attach_net(reply_buf)<0)
+	if(BC28_Check_Attach_Net(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_reg_status(reply_buf)<0)
+	if(BC28_Check_Reg_Status(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_ip(reply_buf)<0)
+	if(BC28_Check_IP(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_set_ip_port(reply_buf)<0)
+	if(BC28_Set_IP_PORT(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_ip_port(reply_buf)<0)
+	if(BC28_Check_IP_PORT(comport, reply_buf)<0)
 		return -1;
 
-	if(bc28_check_iot(reply_buf)<0)
+	if(BC28_Check_IOT(comport, reply_buf)<0)
 		return -1;
 
 	return 0;

@@ -11,7 +11,7 @@
 #include "i2c.h"
 #include "FreeRTOS.h"
 #include "task.h"
-
+#include <string.h>
 //#define CONFIG_SHT30_DEBUG
 
 #ifdef CONFIG_SHT30_DEBUG
@@ -142,5 +142,34 @@ int SHT30_SmapleData(float *temperature, float *humidity)
 	*temperature = -45 + 175*((float)temp/65535);
 	*humidity = 100 * ((float)humd/65535);
 
+	return 0;
+}
+
+void float_to_hex(float f, char hex[9])
+{
+	uint8_t *byteptr ;
+	byteptr = (uint8_t *)&f;
+	snprintf(hex,9,"%02X%02X%02X%02X",byteptr[3],byteptr[2],byteptr[1],byteptr[0]);
+}
+
+int sht30_get_temp(char *buf,int size)
+{
+	float			temperature,humidity;
+	char			hex1[9],hex2[9];
+	int				rv;
+
+	memset(hex1,0,sizeof(hex1));
+	memset(hex2,0,sizeof(hex2));
+
+	rv=SHT30_SmapleData(&temperature, &humidity);
+	if(rv<0)
+	{
+		printf("error\r\n");
+		return -1;
+	}
+	float_to_hex(temperature, hex1);
+	float_to_hex(humidity, hex2);
+	snprintf(buf, size,"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",\
+													hex2,hex1);
 	return 0;
 }

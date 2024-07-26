@@ -17,22 +17,30 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include <at-bc28.h>
+
+#define CONFIG_OS_STM32
+//#define CONFIG_OS_LINUX
+
+#ifdef CONFIG_OS_STM32
 #include "main.h"
-#include "cmsis_os.h"
-#include "i2c.h"
-#include "tim.h"
-#include "usart.h"
-#include "gpio.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "cmsis_os.h"
+#include "i2c.h"
+#include "tim.h"
+#include "at-bc28.h"
+#include "usart.h"
+#include "gpio.h"
 #include "at_cmd.h"
 #include "dht11.h"
 #include "task.h"
 #include "list.h"
 #include "timers.h"
 #include "sht30.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,8 +54,6 @@ TaskHandle_t			ReportTask_Handle;
 
 TaskHandle_t			ReceiveTask_Handle;
 
-SemaphoreHandle_t		xMutex;
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -56,7 +62,7 @@ static void BSP_Init(void);
 static void NBIoT_MGR(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void Report_Task(void *parameter);
-static int sht30_get_temp(char *buf,int size);
+int STM32_Create();
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -86,53 +92,31 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+#elif (defined CONFIG_OS_LINUX)
+#include "nbiot.h"
+#endif
+
+#ifdef CONFIG_OS_STM32
+typedef int(*LAST_FUNC)();
+#define CREATE_FUNC STM32_Create
+#else
+typedef int(*LAST_FUNC)();
+#define CREATE_FUNC Linux_Create
+#endif
 
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	BSP_Init();
-	BaseType_t xReturn = pdPASS;
+	LAST_FUNC func = CREATE_FUNC;
+	func();
 
-	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
-	g_atcmd.comport = &comport;
-
-	Event_Handle = xEventGroupCreate();
-	if(NULL != Event_Handle)
-		printf("Event_Handle was created\r\n");
-
-	xSemaphore = xSemaphoreCreateBinary();
-	if(NULL != xSemaphore)
-		printf("The binary semaphore is successfully created\r\n");
-
-	xMutex = xSemaphoreCreateMutex();
-	if(NULL != xMutex)
-		printf("The xMutex semaphore is successfully created\r\n");
-
-	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
-	if(xStreamBuffer != NULL)
-		printf("StreamBuffer was created\r\n");
-
-	xReturn = xTaskCreate(NBIoT_MGR,"NBIoT_MGR", 1024,NULL,3,&NBIoTinit_Task);
-	if(xReturn == pdPASS)
-		printf("NBIoT_init_Task was created\r\n");
-
-	xReturn = xTaskCreate(Report_Task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
-	if(xReturn == pdPASS)
-		printf("Report_Task was created\r\n");
-
-	xReturn = xTaskCreate(atcmd_receive_task,"atcmd_receive_task",1024,NULL,3,&ReceiveTask_Handle);
-	if(xReturn == pdPASS)
-		printf("Receive_Task was created\r\n");
-
-	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
-
-	vTaskStartScheduler();
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
+#ifdef CONFIG_OS_STM32
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -178,6 +162,44 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+int STM32_Create()
+{
+	BSP_Init();
+	BaseType_t xReturn = pdPASS;
+
+	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
+
+	Event_Handle = xEventGroupCreate();
+	if(NULL != Event_Handle)
+		printf("Event_Handle was created\r\n");
+
+	xSemaphore = xSemaphoreCreateBinary();
+	if(NULL != xSemaphore)
+		printf("The binary semaphore is successfully created\r\n");
+
+	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
+	if(xStreamBuffer != NULL)
+		printf("StreamBuffer was created\r\n");
+
+	xReturn = xTaskCreate(NBIoT_MGR,"NBIoT_MGR", 1024,NULL,3,&NBIoTinit_Task);
+	if(xReturn == pdPASS)
+		printf("NBIoT_init_Task was created\r\n");
+
+	xReturn = xTaskCreate(Report_Task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
+	if(xReturn == pdPASS)
+		printf("Report_Task was created\r\n");
+
+	xReturn = xTaskCreate(atcmd_receive_task,"atcmd_receive_task",1024,NULL,3,&ReceiveTask_Handle);
+	if(xReturn == pdPASS)
+		printf("Receive_Task was created\r\n");
+
+	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
+
+	vTaskStartScheduler();
+
+	return 0;
+}
+
 static void BSP_Init(void)
 {
 	HAL_Init();
@@ -199,7 +221,7 @@ static void NBIoT_MGR(void *parameter)
 		switch(NBconf.status)
 		{
 		case STAT_INIT:
-			if(NB_RSET_OK()<0)
+			if(NB_RSET_OK(&comport)<0)
 			{
 				NBconf.status = STAT_INIT;
 				break;
@@ -208,7 +230,7 @@ static void NBIoT_MGR(void *parameter)
 				NBconf.status++;
 
 		case STAT_PRESEND:
-			if(NB_HDW_OK()<0)
+			if(NB_HDW_OK(&comport)<0)
 			{
 				NBconf.status = STAT_PRESEND;
 				break;
@@ -217,7 +239,7 @@ static void NBIoT_MGR(void *parameter)
 				NBconf.status++;
 
 		case STAT_CONF:
-			if(NB_CONF_OK()<0)
+			if(NB_CONF_OK(&comport)<0)
 			{
 				NBconf.status = STAT_CONF;
 				break;
@@ -227,7 +249,6 @@ static void NBIoT_MGR(void *parameter)
 
 		case STAT_RDY:
 			vTaskDelay(pdMS_TO_TICKS(1000));
-			//break;
 			continue;
 
 		default:
@@ -241,8 +262,8 @@ void atcmd_receive_task(void *parameter)
 {
 	uint32_t		bytes = 0;
 	uint32_t		last_bytes = 0;
-	char			buf[ATBUF_SIZE];
 	int				timeout = 50;
+	char			buf[256];
 
 	while(1)
 	{
@@ -276,35 +297,6 @@ WAIT_NEWDATA:
 	}
 }
 
-void float_to_hex(float f, char hex[9])
-{
-	uint8_t *byteptr ;
-	byteptr = (uint8_t *)&f;
-	snprintf(hex,9,"%02X%02X%02X%02X",byteptr[3],byteptr[2],byteptr[1],byteptr[0]);
-}
-
-int sht30_get_temp(char *buf,int size)
-{
-	float			temperature,humidity;
-	char			hex1[9],hex2[9];
-	int				rv;
-
-	memset(hex1,0,sizeof(hex1));
-	memset(hex2,0,sizeof(hex2));
-
-	rv=SHT30_SmapleData(&temperature, &humidity);
-	if(rv<0)
-	{
-		printf("error\r\n");
-		return -1;
-	}
-	float_to_hex(temperature, hex1);
-	float_to_hex(humidity, hex2);
-	snprintf(buf, size,"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",\
-													hex2,hex1);
-	return 0;
-}
-
 static void Report_Task(void *parameter)
 {
 	char			atcmd[256];
@@ -315,33 +307,27 @@ static void Report_Task(void *parameter)
 	{
 		if(NBconf.status == STAT_RDY)
 		{
-			if (xSemaphoreTake(xMutex, portMAX_DELAY) == pdTRUE)
+			if(sht30_get_temp(atcmd,sizeof(atcmd))<0)
 			{
-				if(sht30_get_temp(atcmd,sizeof(atcmd))<0)
+				printf("get temperature and humidity error\r\n");
+			}
+			else
+			{
+				if(atcmd_send(&comport, atcmd, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
 				{
-					printf("get temperature and humidity error\r\n");
+					printf("Send data to cloud failed\r\n");
+					NBconf.status =STAT_INIT;
+					continue;
 				}
 				else
 				{
-					if(atcmd_send(atcmd, timeout,reply_buf,sizeof(reply_buf))<0)
-					{
-						printf("Send data to cloud failed\r\n");
-						NBconf.status =STAT_INIT;
-						xSemaphoreGive(xMutex);
-						continue;
-					}
-					else
-					{
-						printf("Send data to cloud successfully\r\n");
-					}
+					printf("Send data to cloud successfully\r\n");
 				}
-				xSemaphoreGive(xMutex);
 			}
 		}
 		vTaskDelay(pdMS_TO_TICKS(3000));
 	}
 }
-
 /* USER CODE END 4 */
 
 /**
@@ -396,3 +382,4 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+#endif

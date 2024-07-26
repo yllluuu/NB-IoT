@@ -46,6 +46,5 @@ typedef enum
 	LOW_10_CMD = 0x272A,
 }SHT30_CMD;
 
-extern int SHT30_SmapleData(float *temperature, float *humidity);
-
+extern int sht30_get_temp(char *buf,int size);
 #endif /* INC_SHT30_H_ */
