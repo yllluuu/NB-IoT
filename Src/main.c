@@ -17,30 +17,22 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-
-#define CONFIG_OS_STM32
-//#define CONFIG_OS_LINUX
-
-#ifdef CONFIG_OS_STM32
+#include "at-bc28.h"
 #include "main.h"
-
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #include "cmsis_os.h"
 #include "i2c.h"
 #include "tim.h"
-#include "at-bc28.h"
 #include "usart.h"
 #include "gpio.h"
+
+/* Private includes ----------------------------------------------------------*/
+/* USER CODE BEGIN Includes */
 #include "at_cmd.h"
 #include "dht11.h"
 #include "task.h"
 #include "list.h"
 #include "timers.h"
 #include "sht30.h"
-
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,7 +54,6 @@ static void BSP_Init(void);
 static void NBIoT_MGR(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void Report_Task(void *parameter);
-int STM32_Create();
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -92,31 +83,48 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
-#elif (defined CONFIG_OS_LINUX)
-#include "nbiot.h"
-#endif
-
-#ifdef CONFIG_OS_STM32
-typedef int(*LAST_FUNC)();
-#define CREATE_FUNC STM32_Create
-#else
-typedef int(*LAST_FUNC)();
-#define CREATE_FUNC Linux_Create
-#endif
-
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	LAST_FUNC func = CREATE_FUNC;
-	func();
+	BSP_Init();
+	BaseType_t xReturn = pdPASS;
 
+	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
+	g_atcmd.comport = &comport;
+
+	Event_Handle = xEventGroupCreate();
+	if(NULL != Event_Handle)
+		printf("Event_Handle was created\r\n");
+
+	xSemaphore = xSemaphoreCreateBinary();
+	if(NULL != xSemaphore)
+		printf("The binary semaphore is successfully created\r\n");
+
+	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
+	if(xStreamBuffer != NULL)
+		printf("StreamBuffer was created\r\n");
+
+	xReturn = xTaskCreate(NBIoT_MGR,"NBIoT_MGR", 1024,NULL,3,&NBIoTinit_Task);
+	if(xReturn == pdPASS)
+		printf("NBIoT_init_Task was created\r\n");
+
+	xReturn = xTaskCreate(Report_Task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
+	if(xReturn == pdPASS)
+		printf("Report_Task was created\r\n");
+
+	xReturn = xTaskCreate(atcmd_receive_task,"atcmd_receive_task",1024,NULL,3,&ReceiveTask_Handle);
+	if(xReturn == pdPASS)
+		printf("Receive_Task was created\r\n");
+
+	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
+
+	vTaskStartScheduler();
 }
 
 /**
   * @brief System Clock Configuration
   * @retval None
   */
-#ifdef CONFIG_OS_STM32
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -162,44 +170,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int STM32_Create()
-{
-	BSP_Init();
-	BaseType_t xReturn = pdPASS;
-
-	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
-
-	Event_Handle = xEventGroupCreate();
-	if(NULL != Event_Handle)
-		printf("Event_Handle was created\r\n");
-
-	xSemaphore = xSemaphoreCreateBinary();
-	if(NULL != xSemaphore)
-		printf("The binary semaphore is successfully created\r\n");
-
-	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
-	if(xStreamBuffer != NULL)
-		printf("StreamBuffer was created\r\n");
-
-	xReturn = xTaskCreate(NBIoT_MGR,"NBIoT_MGR", 1024,NULL,3,&NBIoTinit_Task);
-	if(xReturn == pdPASS)
-		printf("NBIoT_init_Task was created\r\n");
-
-	xReturn = xTaskCreate(Report_Task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
-	if(xReturn == pdPASS)
-		printf("Report_Task was created\r\n");
-
-	xReturn = xTaskCreate(atcmd_receive_task,"atcmd_receive_task",1024,NULL,3,&ReceiveTask_Handle);
-	if(xReturn == pdPASS)
-		printf("Receive_Task was created\r\n");
-
-	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
-
-	vTaskStartScheduler();
-
-	return 0;
-}
-
 static void BSP_Init(void)
 {
 	HAL_Init();
@@ -221,7 +191,7 @@ static void NBIoT_MGR(void *parameter)
 		switch(NBconf.status)
 		{
 		case STAT_INIT:
-			if(NB_RSET_OK(&comport)<0)
+			if(NB_RSET_OK()<0)
 			{
 				NBconf.status = STAT_INIT;
 				break;
@@ -230,7 +200,7 @@ static void NBIoT_MGR(void *parameter)
 				NBconf.status++;
 
 		case STAT_PRESEND:
-			if(NB_HDW_OK(&comport)<0)
+			if(NB_HDW_OK()<0)
 			{
 				NBconf.status = STAT_PRESEND;
 				break;
@@ -239,7 +209,7 @@ static void NBIoT_MGR(void *parameter)
 				NBconf.status++;
 
 		case STAT_CONF:
-			if(NB_CONF_OK(&comport)<0)
+			if(NB_CONF_OK()<0)
 			{
 				NBconf.status = STAT_CONF;
 				break;
@@ -249,6 +219,7 @@ static void NBIoT_MGR(void *parameter)
 
 		case STAT_RDY:
 			vTaskDelay(pdMS_TO_TICKS(1000));
+			//break;
 			continue;
 
 		default:
@@ -313,7 +284,7 @@ static void Report_Task(void *parameter)
 			}
 			else
 			{
-				if(atcmd_send(&comport, atcmd, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
+				if(atcmd_send(atcmd, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
 				{
 					printf("Send data to cloud failed\r\n");
 					NBconf.status =STAT_INIT;
@@ -328,6 +299,7 @@ static void Report_Task(void *parameter)
 		vTaskDelay(pdMS_TO_TICKS(3000));
 	}
 }
+
 /* USER CODE END 4 */
 
 /**
@@ -382,4 +354,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-#endif

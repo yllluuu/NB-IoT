@@ -8,8 +8,6 @@
 #ifndef INC_AT_BC28_H_
 #define INC_AT_BC28_H_
 
-#include "at_cmd.h"
-
 enum
 {
 	STAT_INIT,
@@ -30,8 +28,8 @@ typedef struct NBiot_conf_s
 
 extern NBiot_conf_t		NBconf;
 
-extern int NB_RSET_OK(comport_t *comport);
-extern int NB_HDW_OK(comport_t *comport);
-extern int NB_CONF_OK(comport_t *comport);
+extern int NB_RSET_OK();
+extern int NB_HDW_OK();
+extern int NB_CONF_OK();
 
 #endif /* INC_AT_BC28_H_ */

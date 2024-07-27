@@ -11,7 +11,7 @@
 #include "i2c.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include <string.h>
+
 //#define CONFIG_SHT30_DEBUG
 
 #ifdef CONFIG_SHT30_DEBUG
