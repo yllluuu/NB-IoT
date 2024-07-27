@@ -1,13 +1,18 @@
-/*
- * nbiot.c
+/*********************************************************************************
+ *      Copyright:  (C) 2024 niuchunmin 
+ *                  All rights reserved.
  *
- *  Created on: 2024年7月26日
- *      Author: 杨璐
- */
-//#define CONFIG_OS_LINUX
+ *       Filename:  nbiot.c
+ *    Description:  This file 
+ *                 
+ *        Version:  1.0.0(17/07/24)
+ *         Author:  Niu Chunmin <niuchunmin@2430815397@qq.com>
+ *      ChangeLog:  1, Release initial version on "17/07/24 10:46:46"
+ *                 
+ ********************************************************************************/
 
-#ifdef CONFIG_OS_LINUX
 #include "nbiot.h"
+
 static inline void msleep(unsigned long ms)
 {
 	struct timespec cSleep;
@@ -39,15 +44,15 @@ void *state_machine_thread(void *arg)
 {
 	nb_config_t*     nbiot_data = (nb_config_t*)arg;
 	int              rv;
-
 	nbiot_data->current_state = STATUS_INIT;
+
 
 	while(1)
 	{
 		switch(nbiot_data->current_state)
 		{
 			case STATUS_INIT:
-				rv = atcmd_check_OK(&nbiot_data->comport, "AT", 500);
+				rv = send_atcmd_check_ok(&nbiot_data->comport, "AT", 500);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_INIT failed.\n");
@@ -59,7 +64,7 @@ void *state_machine_thread(void *arg)
 					break;
 				}
 			case STATUS_PRESEND:
-				rv = NB_HDW_OK(&nbiot_data->comport);
+				rv = nb_status_present(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug:STATUS_PRESEND failed.\n");
@@ -71,7 +76,7 @@ void *state_machine_thread(void *arg)
 					break;
 				}
 			case STATUS_CONFIG:
-				rv = NB_CONF_OK(&nbiot_data->comport);
+				rv = nb_status_config(&nbiot_data->comport);
 				if( rv<0 )
 				{
 					printf ("debug : STATUS_CONFIG failed.\n");
@@ -107,11 +112,6 @@ void *report_data(void *arg)
 
 	while(1)
 	{
-		if(nbiot_data->current_state != STATUS_READY)
-		{
-			msleep(10);
-			continue;
-		}
 
 		sht2x_get_temp_rh(bufferW, DATA_SIZE);
 		pthread_mutex_lock(&comport_mutex);
@@ -145,12 +145,6 @@ void *receive_data(void *arg)
 
 	while(1)
 	{
-
-		if(nbiot_data->current_state != STATUS_READY)
-		{
-			msleep(10);
-			continue;
-		}
 
 		memset(bufferR, 0, sizeof(bufferR));
 		memset(value, 0, sizeof(value));
@@ -187,17 +181,17 @@ void *receive_data(void *arg)
 
 				if( strstr(bufferR, "+NNMI:") )
 				{
-					memset(g_atcmd.Asyn_Buf, 0, sizeof(g_atcmd.Asyn_Buf));
+					memset(g_rece_flags.LEDS_EVENT_BUF, 0, sizeof(g_rece_flags.LEDS_EVENT_BUF));
 					//复制接收到的内容，让处理LED线程去执行
-					strcpy(g_atcmd.Asyn_Buf, bufferR);
+					strcpy(g_rece_flags.LEDS_EVENT_BUF, bufferR);
 					LEDS_EVENT_G = 1;
 					printf ("debug:led parser:%d\n",LEDS_EVENT_G);
 				}
 				else
 				{
-					memset(g_atcmd.AtReply_Buf, 0, sizeof(g_atcmd.AtReply_Buf));
+					memset(g_rece_flags.SEND_EVENT_BUF, 0, sizeof(g_rece_flags.SEND_EVENT_BUF));
 					//复制接收到的内容，让处理AT命令的回复的线程去执行
-					strcpy(g_atcmd.AtReply_Buf, bufferR);
+					strcpy(g_rece_flags.SEND_EVENT_BUF, bufferR);
 					if(nbiot_data->current_state == STATUS_READY)
 					{
 						SEND_EVENT_G = 2;
@@ -215,11 +209,11 @@ void *asyn_process_leds(void *arg)
 {
 	int               rv;
 	leds_t            leds =
-	{
+	{   
 		.leds = leds_info,
 		.count = LED_MAX,
 
-	};
+	};  
 
 	if( (rv=init_led(&leds))<0 )
 	{
@@ -231,12 +225,12 @@ void *asyn_process_leds(void *arg)
 		if(LEDS_EVENT_G ==1)
 		{
 			printf ("test:Z进循环\n");
-			if (strstr(g_atcmd.Asyn_Buf, "0101"))
+			if (strstr(g_rece_flags.LEDS_EVENT_BUF, "0101"))
 			{
 				printf ("Turning LED on\n");
 				open_led(&leds, LED_R);
 			}
-			else if(strstr(g_atcmd.Asyn_Buf, "0100"))
+			else if(strstr(g_rece_flags.LEDS_EVENT_BUF, "0100"))
 			{
 				printf ("Turning led Off\n");
 				close_led(&leds, LED_R);
@@ -260,9 +254,9 @@ void *process_report(void *arg)
 	{
 		if( SEND_EVENT_G==1 )
 		{
-			if( strstr(g_atcmd.AtReply_Buf, "OK") )
+			if( strstr(g_rece_flags.SEND_EVENT_BUF, "OK") )
 			{
-				printf("Receive:%s",g_atcmd.AtReply_Buf);
+				printf("Receive:%s",g_rece_flags.SEND_EVENT_BUF);
 			}
 		}
 		else
@@ -311,15 +305,15 @@ int Linux_Create()
 
 	if ( pthread_create(&leds_process_thread, NULL, asyn_process_leds,
 				&nbiot_data) !=0 )
-	{
+	{   
 		perror("Failed to create receive thread");
-		return -5;
+		return -5; 
 	}
 	if ( pthread_create(&send_process_thread, NULL, process_report,
 				&nbiot_data) !=0 )
-	{
+	{   
 		perror("Failed to create receive led_process thread");
-		return -6;
+		return -6; 
 	}
 
 
@@ -333,6 +327,4 @@ int Linux_Create()
 
 
 	return 0;
-}
-
-#endif
+} 
