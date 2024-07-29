@@ -50,7 +50,7 @@ TaskHandle_t			ReceiveTask_Handle;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-static void BSP_Init(void);
+static void bsp_init(void);
 static void nbiot_mgr(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void report_task(void *parameter);
@@ -86,7 +86,7 @@ void MX_FREERTOS_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	BSP_Init();
+	bsp_init();
 	BaseType_t xReturn = pdPASS;
 
 	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
@@ -184,42 +184,37 @@ static void BSP_Init(void)
 
 static void nbiot_mgr(void *parameter)
 {
-	NBconf.status =STAT_INIT;
+	nbconf.status =STAT_INIT;
 
 	while(1)
 	{
-		switch(NBconf.status)
+		switch(nbconf.status)
 		{
 		case STAT_INIT:
-			if(NB_RSET_OK(&comport)<0)
-			{
+			if(nb_reset_ok(&comport)<0)
 				break;
-			}
 			else
-				NBconf.status++;
+				nbconf.status++;
 
 		case STAT_PRESEND:
-			if(NB_HDW_OK(&comport)<0)
-			{
+			if(nb_hdw_ok(&comport)<0)
 				break;
-			}
 			else
-				NBconf.status++;
+				nbconf.status++;
 
 		case STAT_CONF:
-			if(NB_CONF_OK(&comport)<0)
-			{
+			if(nb_conf_ok(&comport)<0)
 				break;
-			}
 			else
-				NBconf.status++;
+				nbconf.status++;
 
 		case STAT_RDY:
+			printf("CSQ:%s\r\n",nbconf.csq);
 			vTaskDelay(pdMS_TO_TICKS(1000));
 			continue;
 
 		default:
-			NBconf.status = STAT_INIT;
+			nbconf.status = STAT_INIT;
 			break;
 		}
 	}
@@ -229,7 +224,7 @@ void atcmd_receive_task(void *parameter)
 {
 	uint32_t		bytes = 0;
 	uint32_t		last_bytes = 0;
-	int				timeout = 50;
+	int			timeout = 50;
 	char			buf[256];
 
 	while(1)
@@ -263,7 +258,6 @@ WAIT_NEWDATA:
 		atcmd_pars(buf);
 	}
 }
-
 static void report_task(void *parameter)
 {
 	char			atcmd[256];
