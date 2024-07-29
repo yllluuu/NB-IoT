@@ -170,7 +170,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-static void BSP_Init(void)
+static void bsp_init(void)
 {
 	HAL_Init();
 	HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
