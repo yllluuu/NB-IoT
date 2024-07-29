@@ -238,9 +238,10 @@ int parser_async_message(char *buf,char *keystr)
 	if(!(end=strstr(ptr+strlen(keystr),"\r\n")))
 		return -2;
 
-	bytes = end-ptr+2;
+	ptr =ptr+strlen(keystr);
+	bytes = end-ptr;
 
-	strncpy(Asynbuf,buf,(size_t)bytes);
+	strncpy(Asynbuf,ptr,(size_t)bytes);
 	printf("^^^^^^^^Asynbuf=%s\r\n",Asynbuf);
 
 	if(strstr(Asynbuf,"0622B8") && strstr(Asynbuf,"0101"))
