@@ -41,9 +41,9 @@ extern EventGroupHandle_t	Event_Handle;
 extern SemaphoreHandle_t	xSemaphore;
 
 extern int atcmd_pars(char *buf);
-extern int atcmd_send(char *at, uint32_t timeout,char *expect, char *error,char *reply,size_t size);
-extern int atcmd_check_OK(char *at,uint32_t timeout);
-extern int atcmd_check_value(char *at, uint32_t timeout,char *reply,size_t size);
+extern int atcmd_send(comport_t* comport, char *at, uint32_t timeout,char *expect, char *error,char *reply,size_t size);
+extern int atcmd_check_OK(comport_t* comport, char *at,uint32_t timeout);
+extern int atcmd_check_value(comport_t* comport, char *at, uint32_t timeout,char *reply,size_t size);
 extern int parser_async_message(char *buf,char *keystr);
 
 #endif /* INC_AT_CMD_H_ */
