@@ -59,9 +59,9 @@ TaskHandle_t			ReceiveTask_Handle;
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 static void BSP_Init(void);
-static void NBIoT_MGR(void *parameter);
+static void nbiot_mgr(void *parameter);
 static void atcmd_receive_task(void *parameter);
-static void Report_Task(void *parameter);
+static void report_task(void *parameter);
 int STM32_Create();
 /* USER CODE END PD */
 
@@ -181,11 +181,11 @@ int STM32_Create()
 	if(xStreamBuffer != NULL)
 		printf("StreamBuffer was created\r\n");
 
-	xReturn = xTaskCreate(NBIoT_MGR,"NBIoT_MGR", 1024,NULL,3,&NBIoTinit_Task);
+	xReturn = xTaskCreate(nbiot_mgr,"nbiot_mgr", 1024,NULL,3,&NBIoTinit_Task);
 	if(xReturn == pdPASS)
 		printf("NBIoT_init_Task was created\r\n");
 
-	xReturn = xTaskCreate(Report_Task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
+	xReturn = xTaskCreate(report_task,"report_task", 1024,NULL,4,&ReportTask_Handle);
 	if(xReturn == pdPASS)
 		printf("Report_Task was created\r\n");
 
@@ -212,7 +212,7 @@ static void BSP_Init(void)
 	MX_FREERTOS_Init();
 }
 
-static void NBIoT_MGR(void *parameter)
+static void nbiot_mgr(void *parameter)
 {
 	NBconf.status =STAT_INIT;
 
@@ -221,33 +221,25 @@ static void NBIoT_MGR(void *parameter)
 		switch(NBconf.status)
 		{
 		case STAT_INIT:
-			if(NB_RSET_OK(&comport)<0)
-			{
-				NBconf.status = STAT_INIT;
+			if(nb_reset_ok(&comport)<0)
 				break;
-			}
 			else
 				NBconf.status++;
 
 		case STAT_PRESEND:
-			if(NB_HDW_OK(&comport)<0)
-			{
-				NBconf.status = STAT_PRESEND;
+			if(nb_hdw_ok(&comport)<0)
 				break;
-			}
 			else
 				NBconf.status++;
 
 		case STAT_CONF:
-			if(NB_CONF_OK(&comport)<0)
-			{
-				NBconf.status = STAT_CONF;
+			if(nb_conf_ok(&comport)<0)
 				break;
-			}
 			else
 				NBconf.status++;
 
 		case STAT_RDY:
+			printf("CSQ:%s\r\n",NBconf.csq);
 			vTaskDelay(pdMS_TO_TICKS(1000));
 			continue;
 
@@ -297,7 +289,7 @@ WAIT_NEWDATA:
 	}
 }
 
-static void Report_Task(void *parameter)
+static void report_task(void *parameter)
 {
 	char			atcmd[256];
 	int 			timeout=500;
