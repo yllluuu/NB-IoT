@@ -83,7 +83,7 @@ int atcmd_pars(char *buf)
 	return 0;
 }
 
-int atcmd_send(char *at, uint32_t timeout,char *expect, char *error, char *reply,size_t size)
+int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char *error, char *reply,size_t size)
 {
 	EventBits_t		r_event;
 	char			*ptr,*end;
@@ -148,7 +148,7 @@ out:
 		return 0;
 }
 
-int atcmd_check_OK(char *at,uint32_t timeout)
+int atcmd_check_OK(comport_t *comport,char *at,uint32_t timeout)
 {
 	int		rv = 0;
 
@@ -160,7 +160,7 @@ int atcmd_check_OK(char *at,uint32_t timeout)
 
 	return 0;
 }
-int atcmd_check_value(char *at, uint32_t timeout,char *reply,size_t size)
+int atcmd_check_value(comport_t *comport, char *at, uint32_t timeout,char *reply,size_t size)
 {
 	int			rv = 0,i=0;
 	char		buf[ATBUF_SIZE];
