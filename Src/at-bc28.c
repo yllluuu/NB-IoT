@@ -5,13 +5,10 @@
  *      Author: 杨璐
  */
 #include "at-bc28.h"
-#include "usart.h"
-#include "string.h"
-#include "at_cmd.h"
 
-NBiot_conf_t		NBconf;
+nbiot_conf_t		nbconf;
 
-int bc28_Check_AT(comport_t *comport)
+int bc28_check_at(comport_t *comport)
 {
 	if(atcmd_check_OK(comport, "AT", 500)<0)
 	{
@@ -23,7 +20,7 @@ int bc28_Check_AT(comport_t *comport)
 	return 0;
 }
 
-int bc28_Reset(comport_t *comport)
+int bc28_reset(comport_t *comport)
 {
 	if(atcmd_send(comport, "AT+NRB", 5000, "OK", AT_ERRSTR, NULL, 0)<0)
 	{
@@ -35,7 +32,7 @@ int bc28_Reset(comport_t *comport)
 	return 0;
 }
 
-int bc28_Get_MANUF(comport_t *comport, char *reply_buf, size_t size)
+int bc28_get_manuf(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_send(comport, "AT+CGMI", 500, AT_OKSTR, AT_ERRSTR, reply_buf, size)<0)
 	{
@@ -49,7 +46,7 @@ int bc28_Get_MANUF(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Get_Module(comport_t *comport, char *reply_buf, size_t size)
+int bc28_get_module(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_send(comport, "AT+CGMM", 500, AT_OKSTR, AT_ERRSTR, reply_buf, size)<0)
 	{
@@ -63,7 +60,7 @@ int bc28_Get_Module(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_IMEI(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_imei(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CGSN=1", 500, reply_buf, size)<0)
 	{
@@ -75,7 +72,7 @@ int bc28_Check_IMEI(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_SIMCD(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_simcd(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_send(comport, "AT+CIMI", 500, AT_OKSTR, AT_ERRSTR, reply_buf, size)<0)
 	{
@@ -87,7 +84,7 @@ int bc28_Check_SIMCD(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Set_AUTOCNT(comport_t *comport)
+int bc28_set_autocnt(comport_t *comport)
 {
 	if(atcmd_check_OK(comport, "AT+NCONFIG=AUTOCONNECT,TRUE",500)<0)
 	{
@@ -99,7 +96,7 @@ int bc28_Set_AUTOCNT(comport_t *comport)
 	return 0;
 }
 
-int bc28_Check_CFUN(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_cfun(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CFUN?", 500,reply_buf,size)<0)
 	{
@@ -111,7 +108,7 @@ int bc28_Check_CFUN(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_CSQ(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_csq(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CSQ", 500,reply_buf,size)<0)
 	{
@@ -123,7 +120,7 @@ int bc28_Check_CSQ(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Set_Attach_Net(comport_t *comport)
+int bc28_set_attach_net(comport_t *comport)
 {
 	if(atcmd_check_OK(comport, "AT+CGATT=1", 500)<0)
 	{
@@ -135,7 +132,7 @@ int bc28_Set_Attach_Net(comport_t *comport)
 	return 0;
 }
 
-int bc28_Check_Attach_Net(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_attach_net(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CGATT?", 500,reply_buf,size)<0)
 	{
@@ -147,7 +144,7 @@ int bc28_Check_Attach_Net(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_Reg_Status(comport_t *comport, char *reply_buf,size_t size)
+int bc28_check_reg_status(comport_t *comport, char *reply_buf,size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CEREG?", 500,reply_buf,size)<0)
 	{
@@ -159,7 +156,7 @@ int bc28_Check_Reg_Status(comport_t *comport, char *reply_buf,size_t size)
 	return 0;
 }
 
-int bc28_Check_IP(comport_t *comport, char *reply_buf,size_t size)
+int bc28_check_ip(comport_t *comport, char *reply_buf,size_t size)
 {
 	if(atcmd_check_value(comport, "AT+CGPADDR", 500,reply_buf,size)<0)
 	{
@@ -171,7 +168,7 @@ int bc28_Check_IP(comport_t *comport, char *reply_buf,size_t size)
 	return 0;
 }
 
-int bc28_Set_IP_PORT(comport_t *comport, char *reply_buf, size_t size)
+int bc28_set_ip_port(comport_t *comport, char *reply_buf, size_t size)
 {
 	char		buf[256]={0};
 	snprintf(buf,sizeof(buf),"AT+NCDP=%s",NCDP);
@@ -185,7 +182,7 @@ int bc28_Set_IP_PORT(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_IP_PORT(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_ip_port(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+NCDP?", 500,reply_buf,size)<0)
 	{
@@ -197,7 +194,7 @@ int bc28_Check_IP_PORT(comport_t *comport, char *reply_buf, size_t size)
 	return 0;
 }
 
-int bc28_Check_IOT(comport_t *comport, char *reply_buf, size_t size)
+int bc28_check_iot(comport_t *comport, char *reply_buf, size_t size)
 {
 	if(atcmd_check_value(comport, "AT+NMSTATUS?", 500,reply_buf,size)<0)
 	{
@@ -211,9 +208,9 @@ int bc28_Check_IOT(comport_t *comport, char *reply_buf, size_t size)
 
 int nb_reset_ok(comport_t *comport)
 {
-	if(bc28_Check_AT(comport)<0)
+	if(bc28_check_at(comport)<0)
 		return -1;
-	if(bc28_Reset(comport)<0)
+	if(bc28_reset(comport)<0)
 		return -1;
 
 	return 0;
@@ -221,18 +218,16 @@ int nb_reset_ok(comport_t *comport)
 
 int nb_hdw_ok(comport_t *comport)
 {
-	char 		reply_buf[ATBUF_SIZE];
-
-	if(bc28_Get_MANUF(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_get_manuf(comport, nbconf.manufacturers, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Get_Module(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_get_module(comport, nbconf.model, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_IMEI(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_imei(comport, nbconf.imei, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_SIMCD(comport, reply_buf, ATBUF_SIZE))
+	if(bc28_check_simcd(comport, nbconf.sim, ATBUF_SIZE))
 		return -1;
 
 	return 0;
@@ -242,34 +237,34 @@ int nb_conf_ok(comport_t *comport)
 {
 	char 		reply_buf[ATBUF_SIZE];
 
-	if(bc28_Set_AUTOCNT(comport)<0)
+	if(bc28_set_autocnt(comport)<0)
 		return -1;
 
-	if(bc28_Check_CFUN(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_cfun(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_CSQ(comport, NBconf.csq, ATBUF_SIZE)<0)
+	if(bc28_check_csq(comport, nbconf.csq, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Set_Attach_Net(comport)<0)
+	if(bc28_set_attach_net(comport)<0)
 		return -1;
 
-	if(bc28_Check_Attach_Net(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_attach_net(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_Reg_Status(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_reg_status(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_IP(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_ip(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Set_IP_PORT(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_set_ip_port(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_IP_PORT(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_ip_port(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_Check_IOT(comport, reply_buf, ATBUF_SIZE)<0)
+	if(bc28_check_iot(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
 	return 0;
