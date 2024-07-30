@@ -22,9 +22,10 @@
 
 
 /* USER CODE BEGIN 0 */
-uint8_t				data;
+uint8_t					data;
 StreamBufferHandle_t	xStreamBuffer;
-comport_t			comport;
+comport_t				comport;
+
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -246,7 +247,8 @@ int comport_send(comport_t *comport, char *data, int bytes)
 		printf("Invalid input arguments\n");
 		return -1;
 	}
-	return HAL_UART_Transmit(comport->dev, (uint8_t *)data, bytes,0xFFFF);//bytes=strlen(data)
+	return HAL_UART_Transmit(comport->dev, (uint8_t *)data, bytes,0xFFFF);
+
 }
 
 int comport_recv(comport_t *comport, char *buf, int bytes, unsigned long timeout)

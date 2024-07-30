@@ -54,6 +54,7 @@ static void bsp_init(void);
 static void nbiot_mgr(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void report_task(void *parameter);
+static void float_to_hex(float f, char hex[9]);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -90,7 +91,6 @@ int main(void)
 	BaseType_t xReturn = pdPASS;
 
 	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
-	g_atcmd.comport = &comport;
 
 	Event_Handle = xEventGroupCreate();
 	if(NULL != Event_Handle)
@@ -98,7 +98,7 @@ int main(void)
 
 	xSemaphore = xSemaphoreCreateBinary();
 	if(NULL != xSemaphore)
-		printf("The binary semaphore is successfully created\r\n");
+		printf("The semaphore is successfully created\r\n");
 
 	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
 	if(xStreamBuffer != NULL)
@@ -184,37 +184,37 @@ static void bsp_init(void)
 
 static void nbiot_mgr(void *parameter)
 {
-	nbconf.status =STAT_INIT;
+	g_nbconf.status =STAT_INIT;
 
 	while(1)
 	{
-		switch(nbconf.status)
+		switch(g_nbconf.status)
 		{
 		case STAT_INIT:
 			if(nb_reset_ok(&comport)<0)
 				break;
 			else
-				nbconf.status++;
+				g_nbconf.status++;
 
 		case STAT_PRESEND:
 			if(nb_hdw_ok(&comport)<0)
 				break;
 			else
-				nbconf.status++;
+				g_nbconf.status++;
 
 		case STAT_CONF:
 			if(nb_conf_ok(&comport)<0)
 				break;
 			else
-				nbconf.status++;
+				g_nbconf.status++;
 
 		case STAT_RDY:
-			printf("CSQ:%s\r\n",nbconf.csq);
+			printf("CSQ:%s\r\n",g_nbconf.csq);
 			vTaskDelay(pdMS_TO_TICKS(1000));
 			continue;
 
 		default:
-			nbconf.status = STAT_INIT;
+			g_nbconf.status = STAT_INIT;
 			break;
 		}
 	}
@@ -260,24 +260,29 @@ WAIT_NEWDATA:
 }
 static void report_task(void *parameter)
 {
-	char			atcmd[256];
 	int 			timeout=500;
 	char			reply_buf[256];
+	char			buf[256];
+	float			temperature,humidity;
+	char			hex1[9],hex2[9];
 
 	while(1)
 	{
-		if(NBconf.status == STAT_RDY)
+		if(g_nbconf.status == STAT_RDY)
 		{
-			if(sht30_get_temp(atcmd,sizeof(atcmd))<0)
+			if(sht30_smapledata(&temperature, &humidity)<0)
 			{
 				printf("get temperature and humidity error\r\n");
 			}
 			else
 			{
-				if(atcmd_send(&comport,atcmd, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
+				float_to_hex(temperature, hex1);
+				float_to_hex(humidity, hex2);
+				snprintf(buf, sizeof(buf),"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",hex2,hex1);
+				if(atcmd_send(&comport, buf, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
 				{
 					printf("Send data to cloud failed\r\n");
-					NBconf.status =STAT_INIT;
+					g_nbconf.status =STAT_INIT;
 					continue;
 				}
 				else
@@ -288,6 +293,13 @@ static void report_task(void *parameter)
 		}
 		vTaskDelay(pdMS_TO_TICKS(3000));
 	}
+}
+
+void float_to_hex(float f, char hex[9])
+{
+	uint8_t *byteptr ;
+	byteptr = (uint8_t *)&f;
+	snprintf(hex,9,"%02X%02X%02X%02X",byteptr[3],byteptr[2],byteptr[1],byteptr[0]);
 }
 
 /* USER CODE END 4 */

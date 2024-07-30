@@ -20,7 +20,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == USART3)
     {
-    	HAL_UART_Receive_IT(g_atcmd.comport->dev, &data, 1);
+    	HAL_UART_Receive_IT(comport.dev, &data, 1);
         if(xStreamBufferSpacesAvailable(xStreamBuffer)>0)
         {
         	xStreamBufferSendFromISR(xStreamBuffer, &data, 1, &xHigherPriorityTaskWoken);
@@ -73,11 +73,13 @@ int atcmd_pars(char *buf)
 		}
 	}
 
+	printf("**********p\r\n");
+
 	if(bytes)
 	{
 		strncpy(g_atcmd.xAtCmdReply,ptr,bytes);
 		printf("got AT reply:%s",g_atcmd.xAtCmdReply);
-		xEventGroupSetBits(Event_Handle,Receive_EVENT);
+		xEventGroupSetBits(Event_Handle,Receive_Event);
 		return 1;
 	}
 	return 0;
@@ -96,7 +98,7 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	snprintf(g_atcmd.xAtCmd,ATCMD_SIZE,"%s%s",at,AT_SUFFIX);
 	memset(g_atcmd.xAtCmdReply,0,ATCMD_SIZE);
 
-	if(comport_send(g_atcmd.comport, g_atcmd.xAtCmd, strlen(g_atcmd.xAtCmd)) != HAL_OK)
+	if(comport_send(comport, g_atcmd.xAtCmd, strlen(g_atcmd.xAtCmd)) != HAL_OK)
 	{
 		printf("Send AT command failed\r\n");
 		rv = -2;
@@ -104,8 +106,8 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	}
 	printf("Send AT command OK\r\n");
 
-	r_event = xEventGroupWaitBits(Event_Handle,Receive_EVENT,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
-	if(!(r_event&Receive_EVENT))
+	r_event = xEventGroupWaitBits(Event_Handle,Receive_Event,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
+	if(!(r_event&Receive_Event))
 	{
 		rv = -3;
 		goto out;
@@ -128,7 +130,6 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 			strncpy(reply,ptr,(size_t)(end-ptr));
 			printf("AT command %s got reply:%s",at,reply);
 		}
-		//printf("*********p\r\n");
 		rv = 0;
 		goto out;
 	}
@@ -148,11 +149,11 @@ out:
 		return 0;
 }
 
-int atcmd_check_OK(comport_t *comport,char *at,uint32_t timeout)
+int atcmd_check_OK(comport_t *comport, char *at, uint32_t timeout)
 {
 	int		rv = 0;
 
-	rv = atcmd_send(at, timeout, AT_OKSTR, AT_ERRSTR, NULL, 0);
+	rv = atcmd_send(comport, at, timeout, AT_OKSTR, AT_ERRSTR, NULL, 0);
 	if(rv<0)
 	{
 		return -1;
@@ -160,7 +161,7 @@ int atcmd_check_OK(comport_t *comport,char *at,uint32_t timeout)
 
 	return 0;
 }
-int atcmd_check_value(comport_t *comport, char *at, uint32_t timeout,char *reply,size_t size)
+int atcmd_check_value(comport_t *comport, char *at, uint32_t timeout, char *reply, size_t size)
 {
 	int			rv = 0,i=0;
 	char		buf[ATBUF_SIZE];
@@ -173,7 +174,7 @@ int atcmd_check_value(comport_t *comport, char *at, uint32_t timeout,char *reply
 		goto out;
 	}
 
-	rv = atcmd_send(at,timeout,AT_OKSTR,AT_ERRSTR,buf,sizeof(buf));
+	rv = atcmd_send(comport, at, timeout, AT_OKSTR, AT_ERRSTR, buf, sizeof(buf));
 	if(rv)
 	{
 		goto out;

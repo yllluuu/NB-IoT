@@ -30,7 +30,7 @@ typedef struct nbiot_conf_s
 
 #define NCDP			"221.229.214.202,5683"
 
-extern nbiot_conf_t		nbconf;
+extern nbiot_conf_t		g_nbconf;
 
 extern int nb_reset_ok(comport_t *comport);
 extern int nb_hdw_ok(comport_t *comport);

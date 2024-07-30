@@ -16,7 +16,6 @@
 
 typedef struct atcmd_s
 {
-	comport_t    *comport;
 	char		xAtCmd[256];
 	char		xAtCmdReply[256];
 }atcmd_t;
@@ -33,11 +32,10 @@ extern atcmd_t	g_atcmd;
 #define AT_ERRSTR	"\r\nERROR\r\n"
 #define AT_SUFFIX	"\r\n"
 
-#define Receive_EVENT		(0x01<<0)
-#define Send_EVENT			(0x01<<1)
+#define Receive_Event		(0x01<<0)
+#define Send_Event			(0x01<<1)
 
 extern EventGroupHandle_t	Event_Handle;
-
 extern SemaphoreHandle_t	xSemaphore;
 
 extern int atcmd_pars(char *buf);

@@ -34,6 +34,7 @@ extern "C" {
 #include "FreeRTOS.h"
 #include "FreeRTOSConfig.h"
 #include "stream_buffer.h"
+#include "semphr.h"
 
 /* USER CODE END Includes */
 
