@@ -58,11 +58,12 @@ TaskHandle_t			ReceiveTask_Handle;
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-static void BSP_Init(void);
+static void bsp_init(void);
 static void nbiot_mgr(void *parameter);
 static void atcmd_receive_task(void *parameter);
 static void report_task(void *parameter);
-int STM32_Create();
+static void float_to_hex(float f, char hex[9]);
+static int 	stm32_create();
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -98,10 +99,10 @@ void MX_FREERTOS_Init(void);
 
 #ifdef CONFIG_OS_STM32
 typedef int(*LAST_FUNC)();
-#define CREATE_FUNC STM32_Create
+#define CREATE_FUNC stm32_create
 #else
 typedef int(*LAST_FUNC)();
-#define CREATE_FUNC Linux_Create
+#define CREATE_FUNC linux_create
 #endif
 
 int main(void)
@@ -162,9 +163,9 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int STM32_Create()
+int stm32_create()
 {
-	BSP_Init();
+	bsp_init();
 	BaseType_t xReturn = pdPASS;
 
 	comport_open(&comport, NBIOT_UART, 115200, "8N1N");
@@ -200,7 +201,7 @@ int STM32_Create()
 	return 0;
 }
 
-static void BSP_Init(void)
+static void bsp_init(void)
 {
 	HAL_Init();
 	HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
@@ -214,37 +215,37 @@ static void BSP_Init(void)
 
 static void nbiot_mgr(void *parameter)
 {
-	NBconf.status =STAT_INIT;
+	g_nbconf.status =STAT_INIT;
 
 	while(1)
 	{
-		switch(NBconf.status)
+		switch(g_nbconf.status)
 		{
 		case STAT_INIT:
 			if(nb_reset_ok(&comport)<0)
 				break;
 			else
-				NBconf.status++;
+				g_nbconf.status++;
 
 		case STAT_PRESEND:
 			if(nb_hdw_ok(&comport)<0)
 				break;
 			else
-				NBconf.status++;
+				g_nbconf.status++;
 
 		case STAT_CONF:
 			if(nb_conf_ok(&comport)<0)
 				break;
 			else
-				NBconf.status++;
+				g_nbconf.status++;
 
 		case STAT_RDY:
-			printf("CSQ:%s\r\n",NBconf.csq);
+			printf("CSQ:%s\r\n",g_nbconf.csq);
 			vTaskDelay(pdMS_TO_TICKS(1000));
 			continue;
 
 		default:
-			NBconf.status = STAT_INIT;
+			g_nbconf.status = STAT_INIT;
 			break;
 		}
 	}
@@ -291,24 +292,29 @@ WAIT_NEWDATA:
 
 static void report_task(void *parameter)
 {
-	char			atcmd[256];
 	int 			timeout=500;
 	char			reply_buf[256];
+	char			buf[256];
+	float			temperature,humidity;
+	char			hex1[9],hex2[9];
 
 	while(1)
 	{
-		if(NBconf.status == STAT_RDY)
+		if(g_nbconf.status == STAT_RDY)
 		{
-			if(sht30_get_temp(atcmd,sizeof(atcmd))<0)
+			if(sht30_smapledata(&temperature, &humidity)<0)
 			{
 				printf("get temperature and humidity error\r\n");
 			}
 			else
 			{
-				if(atcmd_send(&comport, atcmd, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
+				float_to_hex(temperature, hex1);
+				float_to_hex(humidity, hex2);
+				snprintf(buf, sizeof(buf),"AT+QLWULDATAEX=13,0200250008%s%s,0x0100",hex2,hex1);
+				if(atcmd_send(&comport, buf, timeout,AT_OKSTR,AT_ERRSTR,reply_buf,sizeof(reply_buf))<0)
 				{
 					printf("Send data to cloud failed\r\n");
-					NBconf.status =STAT_INIT;
+					g_nbconf.status =STAT_INIT;
 					continue;
 				}
 				else
@@ -319,6 +325,13 @@ static void report_task(void *parameter)
 		}
 		vTaskDelay(pdMS_TO_TICKS(3000));
 	}
+}
+
+void float_to_hex(float f, char hex[9])
+{
+	uint8_t *byteptr ;
+	byteptr = (uint8_t *)&f;
+	snprintf(hex,9,"%02X%02X%02X%02X",byteptr[3],byteptr[2],byteptr[1],byteptr[0]);
 }
 /* USER CODE END 4 */
 

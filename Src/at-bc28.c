@@ -6,7 +6,7 @@
  */
 #include "at-bc28.h"
 
-nbiot_conf_t		nbconf;
+nbiot_conf_t		g_nbconf;
 
 int bc28_check_at(comport_t *comport)
 {
@@ -210,24 +210,24 @@ int nb_reset_ok(comport_t *comport)
 {
 	if(bc28_check_at(comport)<0)
 		return -1;
-	if(bc28_reset(comport)<0)
-		return -1;
+	/*if(bc28_reset(comport)<0)
+		return -1;*/
 
 	return 0;
 }
 
 int nb_hdw_ok(comport_t *comport)
 {
-	if(bc28_get_manuf(comport, nbconf.manufacturers, ATBUF_SIZE)<0)
+	if(bc28_get_manuf(comport, g_nbconf.manufacturers, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_get_module(comport, nbconf.model, ATBUF_SIZE)<0)
+	if(bc28_get_module(comport, g_nbconf.model, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_imei(comport, nbconf.imei, ATBUF_SIZE)<0)
+	if(bc28_check_imei(comport, g_nbconf.imei, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_simcd(comport, nbconf.sim, ATBUF_SIZE))
+	if(bc28_check_simcd(comport, g_nbconf.sim, ATBUF_SIZE)<0)
 		return -1;
 
 	return 0;
@@ -243,7 +243,7 @@ int nb_conf_ok(comport_t *comport)
 	if(bc28_check_cfun(comport, reply_buf, ATBUF_SIZE)<0)
 		return -1;
 
-	if(bc28_check_csq(comport, nbconf.csq, ATBUF_SIZE)<0)
+	if(bc28_check_csq(comport, g_nbconf.csq, ATBUF_SIZE)<0)
 		return -1;
 
 	if(bc28_set_attach_net(comport)<0)

@@ -81,7 +81,7 @@ int atcmd_pars(char *buf)
 	{
 		strncpy(g_atcmd.xAtCmdReply,ptr,bytes);
 		printf("got AT reply:%s",g_atcmd.xAtCmdReply);
-		xEventGroupSetBits(Event_Handle,Receive_EVENT);
+		xEventGroupSetBits(Event_Handle,Receive_Event);
 		return 1;
 	}
 	return 0;
@@ -158,8 +158,8 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	printf("Send AT command OK\r\n");
 
 #ifdef	CONFIG_OS_STM32
-	r_event = xEventGroupWaitBits(Event_Handle,Receive_EVENT,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
-	if(!(r_event&Receive_EVENT))
+	r_event = xEventGroupWaitBits(Event_Handle,Receive_Event,pdTRUE, pdFALSE, pdMS_TO_TICKS(timeout));
+	if(!(r_event&Receive_Event))
 	{
 		res = -3;
 		goto out;

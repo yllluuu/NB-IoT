@@ -45,8 +45,8 @@ extern atcmd_t	g_atcmd;
 #define AT_SUFFIX	"\r\n"
 
 #ifdef CONFIG_OS_STM32
-#define Receive_EVENT		(0x01<<0)
-#define Send_EVENT			(0x01<<1)
+#define Receive_Event		(0x01<<0)
+#define Send_Event			(0x01<<1)
 #define ATBUF_SIZE			256	/* AT command UART receive buffer size */
 #define ATCMD_SIZE  		256		/* AT command/Reply message length */
 #define STREAM_BUFFER_SIZE 	1024
