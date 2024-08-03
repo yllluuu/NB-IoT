@@ -20,7 +20,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
-
 /* USER CODE BEGIN 0 */
 uint8_t					data;
 StreamBufferHandle_t	xStreamBuffer;

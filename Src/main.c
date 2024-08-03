@@ -17,10 +17,8 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-#include "at-bc28.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -32,6 +30,7 @@
 #include "task.h"
 #include "list.h"
 #include "timers.h"
+#include "at-bc28.h"
 #include "sht30.h"
 /* USER CODE END Includes */
 
@@ -98,7 +97,7 @@ int main(void)
 
 	xSemaphore = xSemaphoreCreateBinary();
 	if(NULL != xSemaphore)
-		printf("The semaphore is successfully created\r\n");
+		printf("The binary semaphore is successfully created\r\n");
 
 	xStreamBuffer = xStreamBufferCreate(STREAM_BUFFER_SIZE,TRIGGER_LEVEL);
 	if(xStreamBuffer != NULL)
@@ -108,7 +107,7 @@ int main(void)
 	if(xReturn == pdPASS)
 		printf("NBIoT_init_Task was created\r\n");
 
-	xReturn = xTaskCreate(report_task,"Report_Task", 1024,NULL,4,&ReportTask_Handle);
+	xReturn = xTaskCreate(report_task,"report_task", 1024,NULL,4,&ReportTask_Handle);
 	if(xReturn == pdPASS)
 		printf("Report_Task was created\r\n");
 
@@ -119,6 +118,8 @@ int main(void)
 	printf("Free heap size: %u bytes\n", xPortGetFreeHeapSize());
 
 	vTaskStartScheduler();
+  /* USER CODE END 1 */
+
 }
 
 /**
@@ -178,7 +179,6 @@ static void bsp_init(void)
 	MX_USART1_UART_Init();
 	MX_USART3_UART_Init();
 	MX_TIM6_Init();
-	MX_I2C2_Init();
 	MX_FREERTOS_Init();
 }
 
@@ -270,7 +270,7 @@ static void report_task(void *parameter)
 	{
 		if(g_nbconf.status == STAT_RDY)
 		{
-			if(sht30_smapledata(&temperature, &humidity)<0)
+			if(SHT30_SampleData(&temperature, &humidity)<0)
 			{
 				printf("get temperature and humidity error\r\n");
 			}

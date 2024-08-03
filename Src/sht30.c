@@ -8,9 +8,14 @@
 #include <stdio.h>
 #include "stm32l4xx_hal.h"
 #include "sht30.h"
+
+#define CONFIG_GPIO_I2C
+
+#ifdef CONFIG_GPIO_I2C
+#include "gpio_i2c_sht30.h"
+#else
 #include "i2c.h"
-#include "FreeRTOS.h"
-#include "task.h"
+#endif
 
 //#define CONFIG_SHT30_DEBUG
 
@@ -27,13 +32,17 @@ static int sht30_send_cmd(SHT30_CMD cmd)
 	buf[0] = cmd >> 8;
 	buf[1] = cmd & 0xFF;
 
+#ifdef CONFIG_GPIO_I2C
+	return I2C_Master_Transmit(SHT30_ADDR_WR,(uint8_t*)buf, 2);
+#else
 	return HAL_I2C_Master_Transmit(&hi2c2, SHT30_ADDR_WR, (uint8_t*)buf, 2, 0xFFFF);
+#endif
 }
 
 static void sht30_soft_reset(void)
 {
 	sht30_send_cmd(SOFT_RESET_CMD);
-	vTaskDelay(pdMS_TO_TICKS(1));
+	HAL_Delay(1);
 }
 
 static int sht30_single_shot_measurement(uint8_t *buf, uint8_t buf_size)
@@ -55,7 +64,11 @@ static int sht30_single_shot_measurement(uint8_t *buf, uint8_t buf_size)
 		return -2;
 	}
 
+#ifdef CONFIG_GPIO_I2C
+	rv = I2C_Master_Receive(SHT30_ADDR_RD, buf, SHT30_DATA_SIZE);
+#else
 	rv = HAL_I2C_Master_Receive(&hi2c2, SHT30_ADDR_RD, buf, SHT30_DATA_SIZE, 0xFFFF);
+#endif
 
 	if( rv )
 	{
@@ -83,7 +96,7 @@ static uint8_t sht30_crc8(const uint8_t *data, int len)
 	return crc;
 }
 
-int sht30_smapledata(float *temperature, float *humidity)
+int SHT30_SampleData(float *temperature, float *humidity)
 {
 	uint8_t		buf[SHT30_DATA_SIZE];
 	int			rv;
@@ -101,7 +114,6 @@ int sht30_smapledata(float *temperature, float *humidity)
 	if(rv)
 	{
 		sht30_print("SHT30 single short measurement failure, rv=%d\n",rv);
-		printf("$$$$$$$$$$sht30rv=%d\r\n",rv);
 		return -2;
 	}
 
