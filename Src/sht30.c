@@ -12,7 +12,7 @@
 #define CONFIG_GPIO_I2C
 
 #ifdef CONFIG_GPIO_I2C
-#include "gpio_i2c_sht30.h"
+#include <gpio_i2c.h>
 #else
 #include "i2c.h"
 #endif

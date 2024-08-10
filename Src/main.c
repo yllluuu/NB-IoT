@@ -17,14 +17,11 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include <gpio_led.h>
 #include "main.h"
 #include "cmsis_os.h"
 #include "tim.h"
 #include "usart.h"
-#include "gpio.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #include "at_cmd.h"
 #include "dht11.h"
 #include "task.h"

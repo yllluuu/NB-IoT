@@ -4,6 +4,7 @@
  *  Created on: 2024年7月14日
  *      Author: 杨璐
  */
+#include <gpio_led.h>
 #include "at_cmd.h"
 #include "usart.h"
 #include <string.h>
@@ -248,13 +249,13 @@ int parser_async_message(char *buf,char *keystr)
 	if(strstr(Asynbuf,"0622B8") && strstr(Asynbuf,"0101"))
 	{
 		printf("led on\n");
-		HAL_GPIO_WritePin(GPIOB, green_led_Pin, GPIO_PIN_RESET);
+		turn_led(green,ON);
 	}
 
 	else if(strstr(Asynbuf,"0100")&& strstr(Asynbuf,"0622B8"))
 	{
 		printf("led off\n");
-		HAL_GPIO_WritePin(GPIOB, green_led_Pin, GPIO_PIN_SET);
+		turn_led(green,OFF);
 	}
 
 	memset(Asynbuf,0,sizeof(Asynbuf));
