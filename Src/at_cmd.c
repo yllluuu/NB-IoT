@@ -10,8 +10,8 @@
 
 
 atcmd_t	g_atcmd;
-int         LEDS_EVENT_G=0;
-int         SEND_EVENT_G=0;
+int         g_send_event = 0;
+int         g_leds_event = 0;
 
 #ifdef CONFIG_OS_STM32
 
@@ -152,6 +152,9 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	if(comport_send(comport, g_atcmd.xAtCmd, strlen(g_atcmd.xAtCmd)) <0 )
 	{
 		printf("Send AT command failed\r\n");
+#ifdef CONFIG_OS_LINUX
+		log_error("send AT command \"%s\" to \"%s\" failed, rv=%d\n", at, comport->devname, rv);
+#endif
 		res = -2;
 		goto out;
 	}
@@ -197,48 +200,55 @@ int atcmd_send(comport_t *comport,char *at, uint32_t timeout,char *expect, char 
 	res = ATRES_TIMEOUT;
 	memset( g_atcmd.xAtCmdReply, 0, ATCMD_REPLY_LEN );
 
+
 	for(i=0; i<timeout/10; i++)
 	{
-		if( bytes >= sizeof(g_atcmd.xAtCmdReply) )
+		if( g_send_event != 1 )
+		{
+			usleep(1000);
 			break;
+		}
 
-		rv=comport_recv( comport, g_atcmd.xAtCmdReply+bytes, sizeof(g_atcmd.xAtCmdReply)-bytes, 10);
-		if(rv < 0)
+		if( !(strstr(g_rece_flags.send_event_buf, at)) )
+		{
+			log_error("Received is not send AT command.\n");
+			return -8;
+		}
+		length = strlen(g_rece_flags.send_event_buf);
+		if(length < 0)
 		{
 			log_error("send AT command \'%s\' to \'%s\' failed, rv=%d\n", at, comport->devname, rv);
 			return -3;
 		}
 
-		bytes += rv;
 
-		if( expect && strstr(g_atcmd.xAtCmdReply, expect) )
+		if( expect && strstr(g_rece_flags.send_event_buf, expect) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"OK\"\n", at);
-			res = 0;
+			res = ATRES_EXPECT;
 			break;
 		}
 
-		if( error && strstr(g_atcmd.xAtCmdReply, error) )
+		if( error && strstr(g_rece_flags.send_event_buf, error) )
 		{
 			log_debug("send AT command \"%s\" and got reply \"ERROR\"\n", at);
-			res = -1;;
+			res = ATRES_ERROR;
 			break;
 		}
 	}
 
-	if( bytes > 0 )
-		log_trace("AT command reply:%s", g_atcmd.xAtCmdReply);
+	if( length > 0 )
+		log_trace("AT command reply:%s", g_rece_flags.send_event_buf);
 
 	if( reply && size>0 )
 	{
-		bytes = strlen(g_atcmd.xAtCmdReply)>size ? size : strlen(g_atcmd.xAtCmdReply);
+		bytes = strlen(g_rece_flags.send_event_buf)>size ? size : strlen(g_rece_flags.send_event_buf);
 		memset(reply, 0, size);
-		strncpy(reply, g_atcmd.xAtCmdReply, bytes);
+		strncpy(reply, g_rece_flags.send_event_buf, length);
 
 		log_debug("copy out AT command \"%s\" reply message: \n%s", at, reply);
+		g_send_event = 0;
 	}
-
-
 #endif
 out:
 	memset(g_atcmd.xAtCmd,0,sizeof(g_atcmd.xAtCmd));
