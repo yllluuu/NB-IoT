@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2024 Niuchunmin 
+ *      Copyright:  (C) 2024 yanglu 
  *                  All rights reserved.
  *
  *       Filename:  at_cmd.h
  *    Description:  This file 
  *
  *        Version:  1.0.0(15/07/24)
- *         Author:  Niu Chunmin <niuchunmin@2430815397@qq.com>
+ *         Author:  yanglu <yanglu@2012174595@qq.com>
  *      ChangeLog:  1, Release initial version on "15/07/24 14:14:27"
  *                 
  ********************************************************************************/
