@@ -2,7 +2,7 @@
  * NB-IoT_test.h
  *
  *  Created on: 2024年7月3日
- *      Author: niuchunmin
+ *      Author: yanglu
  */
 
 #ifndef INC_AT_BC28_H_
