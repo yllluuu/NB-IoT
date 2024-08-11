@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2024 niuchunmin 
+ *      Copyright:  (C) 2024 yanglu 
  *                  All rights reserved.
  *
  *       Filename:  nbiot.h
  *    Description:  This file 
  *
  *        Version:  1.0.0(17/07/24)
- *         Author:  Niu Chunmin <niuchunmin@2430815397@qq.com>
+ *         Author:  yanglu <yanglu@2012174595@qq.com>
  *      ChangeLog:  1, Release initial version on "17/07/24 10:24:41"
  *                 
  ********************************************************************************/
