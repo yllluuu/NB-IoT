@@ -1,9 +1,9 @@
 APPNAME=nbiot
 
 LIBPATH=./lib/
-GPIODLIB=./install/lib
+GPIODLIB=./lib/gpiod/install/lib
 INCPATH=./inc/
-GPIODINC=./install/include
+GPIODINC=./lib/gpiod/install/include
 
 
 CFLAGS+=-I${INCPATH}
@@ -18,10 +18,13 @@ LDFLAGS+=-L${GPIODLIB}
 CC=gcc
 
 all:
-		${CC} ${CFLAGS} -g main.c -o ${APPNAME} ${LDFLAGS} -lnbiot -lgpiod -pthread
+	make -C lib/gpiod/ 
+	make -C src
+	${CC} ${CFLAGS} -g main.c -o ${APPNAME} ${LDFLAGS} -lnbiot -lgpiod -pthread
 
 clean:
-		rm -f ${APPNAME}
+	make clean -C src
+	rm -f ${APPNAME}
 
 run:
 		sudo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${LIBPATH}  ./nbiot

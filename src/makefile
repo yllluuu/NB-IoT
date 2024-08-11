@@ -1,8 +1,8 @@
 LIBNAME=nbiot
 INSTPATH=`pwd`/../lib/ 
 INCPATH=`pwd`/../inc/ 
-GPIODINC=`pwd`/../install/include
-GPIODLIB=`pwd`/../install/lib
+GPIODINC=`pwd`/../lib/gpiod/install/include
+GPIODLIB=`pwd`/../lib/gpiod/install/lib
 
 
 CFLAGS+=-I${INCPATH}
@@ -13,7 +13,7 @@ CC=gcc
 AR=ar 
 
 
-all: dynamic_lib static_lib
+all: static_lib
 	@make install
 	@make clear
 

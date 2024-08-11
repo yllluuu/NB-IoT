@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # library name and version
-# Official: https://www.sqlite.org/index.html
-LIB_NAME=sqlite-autoconf-3430000
+# Official: https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/refs/?h=v1.6.x
+LIB_NAME=libgpiod-2.0.1
 PACK_SUFIX=tar.gz
 
 # LingYun source code FTP server
-LY_FTP=http://main.iot-yun.club:2211/src/
+LY_FTP=http://master.weike-iot.com:2211/src/
 
 # library download URL address
 LIB_URL=$LY_FTP
@@ -30,7 +30,7 @@ LIB_PATH=$PREFIX_PATH/lib
 INC_PATH=$PREFIX_PATH/include
 
 # check installed or not file
-INST_FILE=$PREFIX_PATH/bin/sqlite3
+INST_FILE=$PREFIX_PATH/bin/libgpiod-2.0.1
 
 # shell script will exit once get command error
 set -e
@@ -113,6 +113,7 @@ function do_export()
 	pr_warn "cross(${CROSS_COMPILE}) compile $LIB_NAME"
 
 	# export cross toolchain
+#	export CROSS_COMPILE=arm-linux-gnueabihf-
 	export CC=${CROSS_COMPILE}gcc
 	export CXX=${CROSS_COMPILE}g++
 	export AS=${CROSS_COMPILE}as
@@ -155,12 +156,15 @@ function do_build()
 {
 	cd $LIB_NAME
 
+	./autogen.sh
 	do_export
+	unset CFLAGS
+	unset LDFLAGS 
+	echo "ac_cv_func_malloc_0_nonnull=yes" > arm-linux.cache
+	./configure --prefix=`pwd`/../install --build=i686-pc-linux --host=arm-linux --enable-static --enable-tools --cache-file=arm-linux.cache
 
-	./configure --prefix=${PREFIX_PATH} ${CONFIG_CROSS} --enable-static --enable-static-shell
-	check_result "ERROR: configure ${LIB_NAME} failure"
 
-	make && make install
+	make && make install prefix=${PREFIX_PATH}
 	check_result "ERROR: compile ${LIB_NAME} failure"
 }
 
