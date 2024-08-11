@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2024 niuchunmin 
+ *      Copyright:  (C) 2024 yanglu 
  *                  All rights reserved.
  *
  *       Filename:  sht20.h
  *    Description:  This file 
  *
  *        Version:  1.0.0(16/07/24)
- *         Author:  Niu Chunmin <niuchunmin@2430815397@qq.com>
+ *         Author:  yanglu <yanglu@2012174595@qq.com>
  *      ChangeLog:  1, Release initial version on "16/07/24 19:10:25"
  *                 
  ********************************************************************************/
